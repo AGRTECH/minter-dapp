@@ -46,6 +46,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+let nftContract;
 const updateConnectStatus = async () => {
   const onboarding = new MetaMaskOnboarding();
   const onboardButton = document.getElementById("connectWallet");
@@ -72,6 +73,7 @@ const updateConnectStatus = async () => {
     // SHOW SPINNER
     spinner.classList.remove("hidden");
     window.contract = new web3.eth.Contract(abi, contractAddress);
+    nftContract = new web3.eth.Contract(abi, contractAddress);
     loadInfo();
   } else {
     onboardButton.innerText = "Connect MetaMask!";
@@ -94,6 +96,7 @@ const updateConnectStatus = async () => {
           window.address = accts[0];
           accounts = accts;
           window.contract = new web3.eth.Contract(abi, contractAddress);
+          nftContract = new web3.eth.Contract(abi, contractAddress);
           loadInfo();
         });
     };
@@ -161,9 +164,9 @@ async function checkChain() {
 }
 
 async function loadInfo() {
-  window.info = await window.contract.methods.getInfo().call();
-  const publicMintActive = await contract.methods.mintingActive().call();
-  const presaleMintActive = await contract.methods.presaleActive().call();
+  window.info = await nftContract.methods.getInfo().call();
+  const publicMintActive = await nftContract.methods.mintingActive().call();
+  const presaleMintActive = await nftContract.methods.presaleActive().call();
   const mainHeading = document.getElementById("mainHeading");
   const subHeading = document.getElementById("subHeading");
   const mainText = document.getElementById("mainText");
@@ -191,7 +194,7 @@ async function loadInfo() {
         `/.netlify/functions/merkleProof/?wallet=${window.address}&chain=${chain}&contract=${contractAddress}`
       );
       const merkleJson = await merkleData.json();
-      const whitelisted = await contract.methods
+      const whitelisted = await nftContract.methods
         .isWhitelisted(window.address, merkleJson)
         .call();
       if (!whitelisted) {
@@ -320,13 +323,13 @@ async function mint() {
 
   const amount = parseInt(document.getElementById("mintInput").value);
   const value = BigInt(info.deploymentConfig.mintPrice) * BigInt(amount);
-  const publicMintActive = await contract.methods.mintingActive().call();
-  const presaleMintActive = await contract.methods.presaleActive().call();
+  const publicMintActive = await nftContract.methods.mintingActive().call();
+  const presaleMintActive = await nftContract.methods.presaleActive().call();
 
   if (publicMintActive) {
     // PUBLIC MINT
     try {
-      const mintTransaction = await contract.methods
+      const mintTransaction = await nftContract.methods
         .mint(amount)
         .send({ from: window.address, value: value.toString() });
       if (mintTransaction) {
@@ -366,7 +369,7 @@ async function mint() {
         `/.netlify/functions/merkleProof/?wallet=${window.address}&chain=${chain}&contract=${contractAddress}`
       );
       const merkleJson = await merkleData.json();
-      const presaleMintTransaction = await contract.methods
+      const presaleMintTransaction = await nftContract.methods
         .presaleMint(amount, merkleJson)
         .send({ from: window.address, value: value.toString() });
       if (presaleMintTransaction) {
